@@ -1,0 +1,29 @@
+{
+    "name": "headercat/statimate",
+    "description": "Static site generator for minimalist.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Headercat",
+            "email": "contact@headercat.com"
+        }
+    ],
+    "scripts": {
+        "test:type": "phpstan analyse -c phpstan.neon"
+    },
+    "autoload": {
+        "psr-4": {
+            "Headercat\\Statimate\\": "src/"
+        }
+    },
+    "bin": [
+        "bin/init"
+    ],
+    "require-dev": {
+        "phpstan/phpstan": "^2.1"
+    },
+    "require": {
+        "eftec/bladeone": "^4.18",
+        "erusev/parsedown": "^1.7"
+    }
+}

@@ -1,0 +1,11 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Headercat\Statimate\Build;
+
+require __DIR__ . '/../vendor/autoload.php';
+
+$config = require __DIR__ . '/statimate.config.php';
+new Build($config)->build();

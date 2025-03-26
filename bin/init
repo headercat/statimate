@@ -1,0 +1,52 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+$cwd = getcwd();
+if (!file_exists($cwd . '/composer.json')) {
+  echo "Run it from the root of the project where the composer.json file exists.\n";
+  exit(1);
+}
+
+@mkdir($cwd . '/routes');
+
+file_put_contents(
+  filename: $cwd . '/routes/index.blade.php',
+  data: <<<HTML
+<h1>Hello Statimate!</h1>
+HTML);
+
+file_put_contents(
+  filename: $cwd . '/statimate.config.php',
+  data: <<<PHP
+<?php
+
+declare(strict_types=1);
+
+use Headercat\Statimate\Statimate;
+
+return new Statimate()
+    ->withRouteDir(__DIR__ . '/routes')
+    ->withBuildDir(__DIR__ . '/build');
+PHP);
+
+file_put_contents(
+    filename: $cwd . '/statimate',
+    data: <<<PHP
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Headercat\Statimate\Build;
+
+require __DIR__ . '/vendor/autoload.php';
+
+\$config = require __DIR__ . '/statimate.config.php';
+new Build(\$config)->build();
+PHP);
+
+chmod($cwd . '/statimate', 755);
+
+echo "Installed!\n";

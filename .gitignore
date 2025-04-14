@@ -1,0 +1,13 @@
+# IDE
+/.idea/
+/.vscode/
+
+# OSX
+.DS_Store
+
+# Package Manager
+/node_modules/
+/vendor/
+
+# Build
+/docs/build/

@@ -1,0 +1,8 @@
+#!/usr/bin/env php
+<?php
+
+/** @var Silly\Application $app */
+$app = require __DIR__ . '/../src/app.php';
+
+/** @noinspection PhpUnhandledExceptionInspection */
+$app->run();

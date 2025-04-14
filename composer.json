@@ -1,0 +1,37 @@
+{
+    "name": "headercat/statimate",
+    "description": "Static site generator for minimalist.",
+    "version": "0.0.1",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "headercat.",
+            "email": "contact@headercat.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Headercat\\Statimate\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Headercat\\Statimate\\Docs\\": "docs/"
+        }
+    },
+    "bin": [
+        "bin/statimate"
+    ],
+    "require": {
+        "php": "^8.4",
+        "ext-fileinfo": "*",
+        "illuminate/view": "11.7",
+        "illuminate/config": "11.7",
+        "league/commonmark": "^2.6",
+        "symfony/console": "^7.2",
+        "mnapoli/silly": "^1.9"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^2.1"
+    }
+}

@@ -132,6 +132,9 @@ final class Application extends \Silly\Application
         if (!$port || $port < 1 || $port > 65535) {
             Output::error('Port number must be an integer between 1 and 65535.');
         }
+        if (!Worker::isPortAvailable($port)) {
+            Output::error('Port ' . $port . ' is not available.');
+        }
 
         $config = $this->getConfig($config);
         Output::title($this->getVersion());

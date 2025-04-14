@@ -109,7 +109,7 @@ final class Output
         if ($timer) {
             $message = $message . ' (' . round($timer->get(), 2) . 's)';
         }
-        self::write('🚨 <error>' . $message . '</>');
+        self::write('🚨 <fg=red>' . $message . '</>');
         exit(1);
     }
 

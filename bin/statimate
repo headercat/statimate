@@ -1,8 +1,19 @@
 #!/usr/bin/env php
 <?php
 
-/** @var Silly\Application $app */
-$app = require __DIR__ . '/../src/app.php';
+/**
+ * Load composer autoloader.
+ */
+if (file_exists($autoloadPath = __DIR__ . '/../vendor/autoload.php')) {
+    require_once $autoloadPath;
+} else if (file_exists($autoloadPath = __DIR__ . '/../../../autoload.php')) {
+    require_once $autoloadPath;
+} else {
+    require_once getenv('HOME') . '/.composer/vendor/autoload.php';
+}
 
-/** @noinspection PhpUnhandledExceptionInspection */
+/**
+ * Run application.
+ */
+$app = new Headercat\Statimate\Console\Application();
 $app->run();

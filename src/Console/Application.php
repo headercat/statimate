@@ -4,16 +4,25 @@ declare(strict_types=1);
 
 namespace Headercat\Statimate\Console;
 
+use FilesystemIterator;
 use Headercat\Statimate\Compiler\Compiler;
 use Headercat\Statimate\Config\StatimateConfig;
+use Headercat\Statimate\Router\Route;
 use Headercat\Statimate\Router\RouteCollector;
 use Headercat\Statimate\Writer\Writer;
 use Illuminate\Container\Container;
 use Illuminate\Contracts\Container\BindingResolutionException;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use RuntimeException;
+use SplFileInfo;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
+use Workerman\Connection\TcpConnection;
+use Workerman\Protocols\Http\Request;
+use Workerman\Protocols\Http\Response;
+use Workerman\Protocols\Http\ServerSentEvents;
 
 final class Application extends \Silly\Application
 {
@@ -27,6 +36,11 @@ final class Application extends \Silly\Application
 
         $this->command('build [config]', $this->buildCommand(...))
             ->descriptions('Build the statimate static site', [
+                'config' => 'PHP file which return a StatimateConfig instance.',
+            ]);
+        $this->command('serve [port] [config]', $this->serveCommand(...))
+            ->descriptions('Serve the statimate static site for development purpose', [
+                'port' => 'Port number to serve.',
                 'config' => 'PHP file which return a StatimateConfig instance.',
             ]);
     }
@@ -76,7 +90,7 @@ final class Application extends \Silly\Application
 
         try {
             $compiler = new Compiler($config);
-            $compiledCount = [ 0, 0 ];
+            $compiledCount = [0, 0];
             foreach ($routes as $route) {
                 $timer = new Timer();
                 if ($route->isDocument) {
@@ -100,6 +114,141 @@ final class Application extends \Silly\Application
         Output::step(4, 'Build complete');
         Output::success('Build directory: ' . $config->buildDir, $globalTimer);
         Output::write('');
+    }
+
+    /**
+     * Serve command.
+     *
+     * @param string      $port   Port number to serve.
+     * @param string|null $config Configuration file path.
+     *
+     * @return void
+     *
+     * @throws BindingResolutionException
+     */
+    public function serveCommand(string $port = '8080', string|null $config = null): void
+    {
+        $port = (int) $port;
+        if (!$port || $port < 1 || $port > 65535) {
+            Output::error('Port number must be an integer between 1 and 65535.');
+        }
+
+        $config = $this->getConfig($config);
+        Output::title($this->getVersion());
+
+        $config->setBuildDir(sys_get_temp_dir() . '/headercat/statimate/serve');
+        $routeCollector = new RouteCollector($config);
+        $writer = new Writer($config);
+        $compiler = new Compiler($config);
+        $writer->clear();
+
+        $sseScript = '<script>(() => {
+            new EventSource(`${location.protocol}//${location.host}/__statimate_broadcast`)
+                .addEventListener("message", () => location.reload())
+        }) ();</script>';
+
+        $lastMtime = time();
+        $routes = [];
+        $scoped = [ $config, $routeCollector, $writer, $compiler, $sseScript, &$lastMtime, &$routes ];
+
+        /** @noinspection PhpObjectFieldsAreOnlyWrittenInspection */
+        $worker = new Worker('http://0.0.0.0:' . $port);
+        $worker->onMessage = function (TcpConnection $connection, Request $request) use ($scoped): bool|null {
+            [ $config, $routeCollector, $writer, $compiler, $sseScript, &$lastMtime, &$routes ] = $scoped;
+
+            if ($request->path() === '/__statimate_broadcast') {
+                if ($request->header('accept') !== 'text/event-stream') {
+                    return $connection->send(new Response(302, [
+                        'Location' => 'https://github.com/headercat/statimate'
+                    ]));
+                }
+                $connection->send(new Response(200, [
+                    'Content-Type' => 'text/event-stream'
+                ])->withBody("\r\n"));
+
+                $interval = \Workerman\Timer::add(0.5, function () use ($config, $connection, &$lastMtime, &$interval) {
+                    if ($connection->getStatus() !== TcpConnection::STATUS_ESTABLISHED) {
+                        \Workerman\Timer::del($interval ?? 0);
+                        return;
+                    }
+                    $iterator = new RecursiveIteratorIterator(
+                        new RecursiveDirectoryIterator($config->projectDir, FilesystemIterator::SKIP_DOTS)
+                    );
+                    foreach ($iterator as $file) {
+                        assert($file instanceof SplFileInfo);
+                        clearstatcache(true, $path = $file->getRealPath());
+                        if ($lastMtime < ($time = filemtime($path))) {
+                            $lastMtime = $time;
+                            $connection->send(new ServerSentEvents([
+                                'event' => 'message',
+                                'data' => 'reload',
+                            ]));
+                            return;
+                        }
+                    }
+                });
+                return null;
+            }
+
+            $path = '/' . trim($request->path(), '/');
+            $realPath = realpath($config->buildDir . $path);
+
+            $findRoute = function () use (&$routes, &$path): Route|null {
+                if (!($route = array_find($routes, fn (Route $r) => $r->route === $path))) {
+                    $path = '/' . trim($path . '/index.html', '/');
+                    return array_find($routes, fn (Route $route) => $route->route === $path);
+                }
+                return $route;
+            };
+
+            if (!$realPath) {
+                $routes = $routeCollector->collect($config->routeDir);
+                if (!($route = $findRoute())) {
+                    return $connection->send(new Response(404));
+                }
+                if (!$route->isDocument) {
+                    $timer = new Timer();
+                    $writer->copy($route->route, $route->sourcePath);
+                    Output::compiled($route, $timer);
+                    return $connection->send(new Response()->withFile($config->buildDir . $route->route));
+                }
+            }
+            if (!isset($route) && !($route = $findRoute())) {
+                return $connection->send(new Response(404));
+            }
+
+            if (!$route->isDocument) {
+                clearstatcache(true, $route->sourcePath);
+                clearstatcache(true, $config->buildDir . $route->route);
+                if (filemtime($config->buildDir . $route->route) < filemtime($route->sourcePath)) {
+                    $timer = new Timer();
+                    $writer->copy($route->route, $route->sourcePath);
+                    Output::compiled($route, $timer);
+                }
+                return $connection->send(new Response()->withFile($config->buildDir . $route->route));
+            }
+
+            $timer = new Timer();
+            $writer->write($route->route, $compiler->compile($route));
+            Output::compiled($route, $timer);
+
+            $content = file_get_contents($config->buildDir . $route->route);
+            if ($content === false) {
+                return $connection->send(new Response(404));
+            }
+
+            $content = $content . $sseScript;
+            return $connection->send(
+                new Response(200)
+                    ->withHeader('Content-Type', 'text/html')
+                    ->withBody($content)
+            );
+        };
+
+        Output::success('Listen on: http://localhost:' . $port);
+        Output::write('');
+
+        Worker::runAll();
     }
 
     /**

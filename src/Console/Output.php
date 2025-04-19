@@ -100,17 +100,16 @@ final class Output
      * @param string     $message Message to output.
      * @param Timer|null $timer   Timer to calculate the execution time.
      *
-     * @return never
+     * @return void
      *
      * @throws BindingResolutionException
      */
-    public static function error(string $message, Timer|null $timer = null): never
+    public static function error(string $message, Timer|null $timer = null): void
     {
         if ($timer) {
             $message = $message . ' (' . round($timer->get(), 2) . 's)';
         }
         self::write('🚨 <fg=red>' . $message . '</>');
-        exit(1);
     }
 
     /**

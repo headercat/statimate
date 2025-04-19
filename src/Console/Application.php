@@ -71,6 +71,7 @@ final class Application extends \Silly\Application
             }
         } catch (Throwable $e) {
             Output::error($e->getMessage(), $globalTimer);
+            exit(1);
         }
         Output::success(number_format(count($routes)) . ' routes found.', $routeCollectorTimer);
 
@@ -82,6 +83,7 @@ final class Application extends \Silly\Application
             $writer->clear();
         } catch (Throwable $e) {
             Output::error($e->getMessage(), $globalTimer);
+            exit(1);
         }
         Output::success('Build directory cleaned.', $clearTimer);
 
@@ -104,6 +106,7 @@ final class Application extends \Silly\Application
             }
         } catch (Throwable $e) {
             Output::error($e->getMessage(), $globalTimer);
+            exit(1);
         }
         Output::success(
             number_format($compiledCount[0]) . ' document compiled, '
@@ -131,9 +134,11 @@ final class Application extends \Silly\Application
         $port = (int) $port;
         if (!$port || $port < 1 || $port > 65535) {
             Output::error('Port number must be an integer between 1 and 65535.');
+            exit(1);
         }
         if (!Worker::isPortAvailable($port)) {
             Output::error('Port ' . $port . ' is not available.');
+            exit(1);
         }
 
         $config = $this->getConfig($config);
@@ -193,59 +198,64 @@ final class Application extends \Silly\Application
                 return null;
             }
 
-            $path = '/' . trim($request->path(), '/');
-            $realPath = realpath($config->buildDir . $path);
+            try {
+                $path = '/' . trim($request->path(), '/');
+                $realPath = realpath($config->buildDir . $path);
 
-            $findRoute = function () use (&$routes, &$path): Route|null {
-                if (!($route = array_find($routes, fn (Route $r) => $r->route === $path))) {
-                    $path = '/' . trim($path . '/index.html', '/');
-                    return array_find($routes, fn (Route $route) => $route->route === $path);
+                $findRoute = function () use (&$routes, &$path): Route|null {
+                    if (!($route = array_find($routes, fn(Route $r) => $r->route === $path))) {
+                        $path = '/' . trim($path . '/index.html', '/');
+                        return array_find($routes, fn(Route $route) => $route->route === $path);
+                    }
+                    return $route;
+                };
+
+                if (!$realPath) {
+                    $routes = $routeCollector->collect($config->routeDir);
+                    if (!($route = $findRoute())) {
+                        return $connection->send(new Response(404));
+                    }
+                    if (!$route->isDocument) {
+                        $timer = new Timer();
+                        $writer->copy($route->route, $route->sourcePath);
+                        Output::compiled($route, $timer);
+                        return $connection->send(new Response()->withFile($config->buildDir . $route->route));
+                    }
                 }
-                return $route;
-            };
-
-            if (!$realPath) {
-                $routes = $routeCollector->collect($config->routeDir);
-                if (!($route = $findRoute())) {
+                if (!isset($route) && !($route = $findRoute())) {
                     return $connection->send(new Response(404));
                 }
+
                 if (!$route->isDocument) {
-                    $timer = new Timer();
-                    $writer->copy($route->route, $route->sourcePath);
-                    Output::compiled($route, $timer);
+                    clearstatcache(true, $route->sourcePath);
+                    clearstatcache(true, $config->buildDir . $route->route);
+                    if (filemtime($config->buildDir . $route->route) < filemtime($route->sourcePath)) {
+                        $timer = new Timer();
+                        $writer->copy($route->route, $route->sourcePath);
+                        Output::compiled($route, $timer);
+                    }
                     return $connection->send(new Response()->withFile($config->buildDir . $route->route));
                 }
-            }
-            if (!isset($route) && !($route = $findRoute())) {
-                return $connection->send(new Response(404));
-            }
 
-            if (!$route->isDocument) {
-                clearstatcache(true, $route->sourcePath);
-                clearstatcache(true, $config->buildDir . $route->route);
-                if (filemtime($config->buildDir . $route->route) < filemtime($route->sourcePath)) {
-                    $timer = new Timer();
-                    $writer->copy($route->route, $route->sourcePath);
-                    Output::compiled($route, $timer);
+                $timer = new Timer();
+                $writer->write($route->route, $compiler->compile($route));
+                Output::compiled($route, $timer);
+
+                $content = file_get_contents($config->buildDir . $route->route);
+                if ($content === false) {
+                    return $connection->send(new Response(404));
                 }
-                return $connection->send(new Response()->withFile($config->buildDir . $route->route));
+
+                $content = $content . $sseScript;
+                return $connection->send(
+                    new Response(200)
+                        ->withHeader('Content-Type', 'text/html')
+                        ->withBody($content)
+                );
+            } catch (Throwable $e) {
+                Output::error($e->getMessage());
+                return $connection->send(new Response(500));
             }
-
-            $timer = new Timer();
-            $writer->write($route->route, $compiler->compile($route));
-            Output::compiled($route, $timer);
-
-            $content = file_get_contents($config->buildDir . $route->route);
-            if ($content === false) {
-                return $connection->send(new Response(404));
-            }
-
-            $content = $content . $sseScript;
-            return $connection->send(
-                new Response(200)
-                    ->withHeader('Content-Type', 'text/html')
-                    ->withBody($content)
-            );
         };
 
         Output::success('Listen on: http://localhost:' . $port);
@@ -291,15 +301,18 @@ final class Application extends \Silly\Application
         }
         if (!$configPath || !file_exists($configPath)) {
             Output::error('Cannot find a proper statimate configuration file.');
+            exit(1);
         }
         try {
             $output = include $configPath;
             if (!$output instanceof StatimateConfig) {
                 Output::error('The configuration file "' . $configPath . '" does not return a StatimateConfig instance.');
+                exit(1);
             }
             return $output;
         } catch (Throwable) {
             Output::error('Configuration file "' . $configPath . '" has some unhandled error.');
+            exit(1);
         }
     }
 
@@ -318,6 +331,7 @@ final class Application extends \Silly\Application
         } catch (Throwable $e) {
             try {
                 Output::error($e->getMessage());
+                exit(1);
             } catch (Throwable) {
             }
             return 1;

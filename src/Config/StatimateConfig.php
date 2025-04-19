@@ -59,7 +59,7 @@ final class StatimateConfig
     }
 
     /**
-     * Set project root directory.
+     * Set the project root directory.
      *
      * @param string $projectDir Directory path of the project root.
      *
@@ -99,7 +99,7 @@ final class StatimateConfig
     }
 
     /**
-     * Set build output target directory.
+     * Set the build output target directory.
      *
      * @param string $buildDir Directory path of the build output target.
      *

@@ -29,7 +29,7 @@ final class BladeCompiler implements ViewFactory
     private IlluminateBladeCompiler $compiler;
 
     /**
-     * Compile the provided compile target.
+     * Compile the provided compile-target.
      *
      * @param CompileTarget $target Target to compile.
      *

@@ -21,7 +21,7 @@ final readonly class Compiler
     }
 
     /**
-     * Compile template of the provided Route.
+     * Compile a template of the provided Route.
      *
      * @param Route $route Route to compile the template.
      *
@@ -47,7 +47,7 @@ final readonly class Compiler
     }
 
     /**
-     * Get compile target paths, especially the origin route path, and it's layout files.
+     * Get compile-target paths, especially the origin route path, and it's layout files.
      *
      * @param Route $route Route to get the compile target paths.
      *

@@ -21,7 +21,7 @@ final class RouteCollector
     private array $documentExtensions;
 
     /**
-     * @var array<string, list<string>> Map of parameter handler file path and it's result parameter strings.
+     * @var array<string, list<string>> Map of a parameter handler file path and it's result parameter strings.
      */
     private array $parameterResults = [];
 
@@ -36,7 +36,7 @@ final class RouteCollector
     }
 
     /**
-     * Collect routes from provided source directory.
+     * Collect routes from the provided source directory.
      *
      * @param string $sourceDir Directory to collect routes.
      *
@@ -72,7 +72,7 @@ final class RouteCollector
     }
 
     /**
-     * Scan files recursively from provided directory.
+     * Scan files recursively from the provided directory.
      *
      * @param string $dir
      *
@@ -95,7 +95,7 @@ final class RouteCollector
     }
 
     /**
-     * Create a route instance from provided source directory and specific file path.
+     * Create a route instance from the provided source directory and specific file path.
      *
      * @param string $sourceDir  Directory that includes route files.
      * @param string $sourcePath File which should have been routed.
@@ -125,7 +125,7 @@ final class RouteCollector
     }
 
     /**
-     * Create a document route instance from provided source directory and specific file path.
+     * Create a document route instance from the provided source directory and specific file path.
      *
      * @param string $sourceDir  Directory that includes route files.
      * @param string $sourcePath File which should have been routed.
@@ -201,7 +201,7 @@ final class RouteCollector
     }
 
     /**
-     * Get parameter results from provided parameter handler PHP file path.
+     * Get parameter results from the provided parameter handler PHP file path.
      *
      * @param string                $handlerPath
      * @param array<string, string> $previous

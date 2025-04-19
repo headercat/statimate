@@ -255,7 +255,7 @@ final class Application extends \Silly\Application
     }
 
     /**
-     * Get version string from composer.json.
+     * Get a version string from composer.json.
      *
      * @return string
      */

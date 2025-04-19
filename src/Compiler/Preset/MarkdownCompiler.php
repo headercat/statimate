@@ -13,7 +13,7 @@ final class MarkdownCompiler
     private static CommonMarkConverter $converter;
 
     /**
-     * Compile the provided compile target.
+     * Compile the provided compile-target.
      *
      * @param CompileTarget $target Target to compile.
      *
@@ -27,7 +27,7 @@ final class MarkdownCompiler
     }
 
     /**
-     * Get CommonMarkConverter instance.
+     * Get a CommonMarkConverter instance.
      *
      * @return CommonMarkConverter
      */
@@ -40,7 +40,7 @@ final class MarkdownCompiler
     }
 
     /**
-     * Render the markdown content.
+     * Render the Markdown content.
      *
      * @param string $content Content to render.
      *

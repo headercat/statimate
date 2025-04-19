@@ -31,7 +31,7 @@ final class Output
     }
 
     /**
-     * Write message to console.
+     * Write a message to the console.
      *
      * @param string $message Message to output.
      *
@@ -57,7 +57,7 @@ final class Output
     }
 
     /**
-     * Write step title message to console.
+     * Write a step title message to the console.
      *
      * @param int    $step  Step number.
      * @param string $title Title of the step.
@@ -77,7 +77,7 @@ final class Output
     }
 
     /**
-     * Write success message to console.
+     * Write a success message to the console.
      *
      * @param string     $message Message to output.
      * @param Timer|null $timer   Timer to calculate the execution time.
@@ -95,7 +95,7 @@ final class Output
     }
 
     /**
-     * Write error message to console.
+     * Write an error message to the console.
      *
      * @param string     $message Message to output.
      * @param Timer|null $timer   Timer to calculate the execution time.

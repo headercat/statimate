@@ -23,14 +23,9 @@ final class Pagination
     private static array $routes;
 
     /**
-     * @var array<string, list<Route>> Map of the base directory and its document routes.
+     * @var array<string, list<list<Route>>> Map of the pagination key and its document routes.
      */
-    private static array $documentRoutes = [];
-
-    /**
-     * @var array<string, array{ baseDir: string, perPage: int }> Map of the pagination key and its configuration.
-     */
-    private static array $paginationConfig = [];
+    private static array $keyRoutes = [];
 
     /**
      * Initialize the pagination helper.
@@ -47,55 +42,55 @@ final class Pagination
     /**
      * Get the pagination param function.
      *
-     * @param string       $baseDir Base directory to get the page count.
-     * @param positive-int $perPage Document route count per page.
+     * @param string                          $key
+     * @param string                          $baseDir Base directory to get the page count.
+     * @param positive-int                    $perPage Document route count per page.
+     * @param (Closure(Route):bool)|null      $filterBy
+     * @param (Closure(Route,Route):int)|null $orderBy
      *
      * @return Closure():list<string>
      */
-    public static function getParams(string $key, string $baseDir, int $perPage = 20): Closure
+    public static function getParams(
+        string $key, string $baseDir, int $perPage = 20, Closure|null $filterBy = null, Closure|null $orderBy = null,
+    ): Closure
     {
-        self::$paginationConfig[$key] = ['baseDir' => $baseDir, 'perPage' => $perPage];
-        $routes = self::getRoutes($baseDir);
-        $pageCount = max(count(array_chunk($routes, $perPage)), 1);
-
-        return fn() => array_map(strval(...), range(1, $pageCount));
+        $chunkedRoutes = self::getChunkedRoutes($key, $baseDir, $perPage, $filterBy, $orderBy);
+        return fn() => array_map(strval(...), range(1, count($chunkedRoutes)));
     }
 
     /**
      * Get the document routes of the provided page information.
      *
-     * @param string                          $key     Pagination key which has been registered from getParams.
-     * @param string|int                      $page    Current page looking for.
-     * @param (Closure(Route,Route):int)|null $orderBy Closure to sort the document routes.
+     * @param string     $key  Pagination key which has been registered from getParams.
+     * @param string|int $page Current page looking for.
      *
      * @return list<Route>
      */
-    public static function getPageDocumentRoutes(string $key, string|int $page, Closure|null $orderBy = null): array
+    public static function getPageDocumentRoutes(string $key, string|int $page): array
     {
-        $config = self::$paginationConfig[$key] ?? null;
-        if (!$config) {
-            throw new UnexpectedValueException(sprintf(
-                'Argument #1 $key must be a valid pagination key, but "%s" given.',
-                $key,
-            ));
-        }
-        ['baseDir' => $baseDir, 'perPage' => $perPage] = $config;
-
-        $page = max((int)$page, 1);
-        $routes = self::getRoutes($baseDir);
-        usort($routes, $orderBy ?? fn(Route $a, Route $b) => $b->route <=> $a->route);
-        return array_slice($routes, ($page - 1) * $perPage, $perPage);
+        $page = max((int) $page, 1);
+        return (self::$keyRoutes[$key] ?? [])[$page - 1] ?? [];
     }
 
     /**
-     * Get routes inside the provided base directory.
+     * Get routes inside the provided key, base directory and per page.
      *
-     * @param string $baseDir Base directory to find the routes.
+     * @param string                          $key
+     * @param string                          $baseDir Base directory to get the page count.
+     * @param positive-int                    $perPage Document route count per page.
+     * @param (Closure(Route):bool)|null      $filterBy
+     * @param (Closure(Route,Route):int)|null $orderBy
      *
-     * @return list<Route>
+     * @return list<list<Route>>
      */
-    private static function getRoutes(string $baseDir): array
+    private static function getChunkedRoutes(
+        string $key, string $baseDir, int $perPage = 20, Closure|null $filterBy = null, Closure|null $orderBy = null,
+    ): array
     {
+        if (isset(self::$keyRoutes[$key])) {
+            return self::$keyRoutes[$key];
+        }
+
         $baseDir = realpath($baseDir);
         if (!$baseDir) {
             throw new UnexpectedValueException(sprintf(
@@ -108,14 +103,15 @@ final class Pagination
             self::$routes = new RouteCollector(self::$config)
                 ->collect(self::$config->routeDir, true);
         }
-        if (!isset(self::$documentRoutes[$baseDir])) {
-            self::$documentRoutes[$baseDir] = array_values(
-                array_filter(
-                    self::$routes,
-                    fn(Route $route) => $route->isDocument && str_starts_with($route->sourcePath, $baseDir),
-                )
-            );
+
+        $documentRoutes = array_values(array_filter(
+            self::$routes,
+            fn(Route $route) => $route->isDocument && str_starts_with($route->sourcePath, $baseDir),
+        ));
+        if ($filterBy) {
+            $documentRoutes = array_values(array_filter($documentRoutes, $filterBy));
         }
-        return self::$documentRoutes[$baseDir];
+        usort($documentRoutes, $orderBy ?? fn(Route $a, Route $b) => $b->route <=> $a->route);
+        return self::$keyRoutes[$key] = array_chunk($documentRoutes, $perPage);
     }
 }

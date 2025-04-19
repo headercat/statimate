@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Headercat\Statimate\Compiler\Preset;
+namespace Headercat\Statimate\Plugin\Preset\MarkdownPlugin;
 
 use Headercat\Statimate\Compiler\CompileTarget;
 use League\CommonMark\CommonMarkConverter;

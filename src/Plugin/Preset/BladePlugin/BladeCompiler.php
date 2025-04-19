@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Headercat\Statimate\Compiler\Preset;
+namespace Headercat\Statimate\Plugin\Preset\BladePlugin;
 
 use Closure;
 use Headercat\Statimate\Compiler\CompileTarget;

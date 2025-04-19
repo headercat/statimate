@@ -2,18 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Headercat\Statimate\Helper;
+namespace Headercat\Statimate\Plugin\Preset\PaginationPlugin;
 
 use Closure;
 use Headercat\Statimate\Config\StatimateConfig;
 use Headercat\Statimate\Router\Route;
 use Headercat\Statimate\Router\RouteCollector;
+use RuntimeException;
 use UnexpectedValueException;
 
 final class Pagination
 {
     /**
      * @var StatimateConfig Statimate configuration.
+     * @noinspection PhpPropertyOnlyWrittenInspection
+     * @phpstan-ignore-next-line
      */
     private static StatimateConfig $config;
 
@@ -26,18 +29,6 @@ final class Pagination
      * @var array<string, list<list<Route>>> Map of the pagination key and its document routes.
      */
     private static array $keyRoutes = [];
-
-    /**
-     * Initialize the pagination helper.
-     *
-     * @param StatimateConfig $config Statimate configuration.
-     *
-     * @return void
-     */
-    public static function init(StatimateConfig $config): void
-    {
-        self::$config = $config;
-    }
 
     /**
      * Get the pagination param function.
@@ -68,7 +59,7 @@ final class Pagination
      */
     public static function getPageDocumentRoutes(string $key, string|int $page): array
     {
-        $page = max((int) $page, 1);
+        $page = max((int)$page, 1);
         return (self::$keyRoutes[$key] ?? [])[$page - 1] ?? [];
     }
 
@@ -100,6 +91,12 @@ final class Pagination
             ));
         }
         if (!isset(self::$routes)) {
+            if (!isset(self::$config)) {
+                throw new RuntimeException(
+                    'PaginationPlugin has not been registered.'
+                    . ' Add it using StatimateConfig::addPlugin() first.'
+                );
+            }
             self::$routes = new RouteCollector(self::$config)
                 ->collect(self::$config->routeDir, true);
         }

@@ -9,6 +9,7 @@ use Headercat\Statimate\Compiler\CompileTarget;
 use Headercat\Statimate\Compiler\Preset\BladeCompiler;
 use Headercat\Statimate\Compiler\Preset\MarkdownCompiler;
 use Headercat\Statimate\Helper\Pagination;
+use Headercat\Statimate\Plugin\PluginInterface;
 use InvalidArgumentException;
 use ReflectionFunction;
 use RuntimeException;
@@ -36,6 +37,11 @@ final class StatimateConfig
      * @var array<string, Closure> Document compilers.
      */
     private(set) array $documentCompilers = [];
+
+    /**
+     * @var list<class-string<PluginInterface>> Registered plugin class names.
+     */
+    private(set) array $registeredPlugins = [];
 
     /**
      * Constructor.
@@ -166,6 +172,25 @@ final class StatimateConfig
 
         $extension = '.' . ltrim(strtolower($extension), '.');
         $this->documentCompilers[$extension] = $compiler;
+        return $this;
+    }
+
+    /**
+     * Add plugin.
+     *
+     * @param class-string<PluginInterface> $pluginClass Class name of the plugin.
+     *
+     * @return self
+     */
+    public function addPlugin(string $pluginClass): self
+    {
+        if (in_array($pluginClass, $this->registeredPlugins)) {
+            throw new UnexpectedValueException(sprintf(
+                'Argument #1 $pluginClass must be registered once, but given "%s" already registered.',
+                $pluginClass,
+            ));
+        }
+        new $pluginClass()->register($this);
         return $this;
     }
 

@@ -26,6 +26,11 @@ final class RouteCollector
     private array $parameterResults = [];
 
     /**
+     * @var list<string> Parameter handlers which have been in handled.
+     */
+    private static array $inHandledParameterHandlers = [];
+
+    /**
      * Constructor.
      *
      * @param StatimateConfig $config Statimate configuration.
@@ -38,11 +43,12 @@ final class RouteCollector
     /**
      * Collect routes from the provided source directory.
      *
-     * @param string $sourceDir Directory to collect routes.
+     * @param string $sourceDir                Directory to collect routes.
+     * @param bool   $ignoreCircularDependency Ignore circular dependency exception.
      *
      * @return list<Route>
      */
-    public function collect(string $sourceDir): array
+    public function collect(string $sourceDir, bool $ignoreCircularDependency = false): array
     {
         $realSourceDir = realpath($sourceDir);
         if (!$realSourceDir) {
@@ -53,7 +59,7 @@ final class RouteCollector
         }
         $routes = [];
         foreach ($this->scanDirectory($realSourceDir) as $file) {
-            $routes = array_merge($routes, $this->createRoutes($realSourceDir, $file));
+            $routes = array_merge($routes, $this->createRoutes($realSourceDir, $file, $ignoreCircularDependency));
         }
 
         $registeredRoutePaths = [];
@@ -68,6 +74,8 @@ final class RouteCollector
             }
             $registeredRoutePaths[$route->route] = $route->sourcePath;
         }
+
+        self::$inHandledParameterHandlers = [];
         return $routes;
     }
 
@@ -97,12 +105,13 @@ final class RouteCollector
     /**
      * Create a route instance from the provided source directory and specific file path.
      *
-     * @param string $sourceDir  Directory that includes route files.
-     * @param string $sourcePath File which should have been routed.
+     * @param string $sourceDir                Directory that includes route files.
+     * @param string $sourcePath               File which should have been routed.
+     * @param bool   $ignoreCircularDependency Ignore circular dependency exception.
      *
      * @return list<Route>
      */
-    private function createRoutes(string $sourceDir, string $sourcePath): array
+    private function createRoutes(string $sourceDir, string $sourcePath, bool $ignoreCircularDependency): array
     {
         if (!str_starts_with($sourcePath, $sourceDir)) {
             throw new UnexpectedValueException(sprintf(
@@ -117,7 +126,7 @@ final class RouteCollector
             fn($ext) => str_ends_with($sourcePath, $ext)
         );
         if ($isDocument) {
-            return $this->createDocumentRoutes($sourceDir, $sourcePath);
+            return $this->createDocumentRoutes($sourceDir, $sourcePath, $ignoreCircularDependency);
         }
 
         $routePath = substr($sourcePath, strlen($sourceDir));
@@ -127,12 +136,13 @@ final class RouteCollector
     /**
      * Create a document route instance from the provided source directory and specific file path.
      *
-     * @param string $sourceDir  Directory that includes route files.
-     * @param string $sourcePath File which should have been routed.
+     * @param string $sourceDir                Directory that includes route files.
+     * @param string $sourcePath               File which should have been routed.
+     * @param bool   $ignoreCircularDependency Ignore circular dependency exception.
      *
      * @return list<Route>
      */
-    private function createDocumentRoutes(string $sourceDir, string $sourcePath): array
+    private function createDocumentRoutes(string $sourceDir, string $sourcePath, bool $ignoreCircularDependency): array
     {
         $routePath = substr($sourcePath, strlen($sourceDir));
         $segments = explode('/', $routePath);
@@ -153,18 +163,24 @@ final class RouteCollector
             $parameters[$i] = $parameterName;
         }
 
-        return $this->createParameterRoutes($sourceDir, $sourcePath, $parameters, []);
+        return $this->createParameterRoutes($sourceDir, $sourcePath, $parameters, [], $ignoreCircularDependency);
     }
 
     /**
-     * @param string                $sourceDir
-     * @param string                $sourcePath
-     * @param array<int, string>    $parameters
-     * @param array<string, string> $previous
+     * Get parameterized routes from the provided arguments.
+     *
+     * @param string                $sourceDir                Directory that includes route files.
+     * @param string                $sourcePath               File which should have been routed.
+     * @param array<int, string>    $parameters               Parsed parameters.
+     * @param array<string, string> $previous                 Previously parsed parameters, which should be passed to
+     *                              the next parameter handler.
+     * @param bool                  $ignoreCircularDependency Ignore circular dependency exception.
      *
      * @return list<Route>
      */
-    private function createParameterRoutes(string $sourceDir, string $sourcePath, array $parameters, array $previous): array
+    private function createParameterRoutes(
+        string $sourceDir, string $sourcePath, array $parameters, array $previous, bool $ignoreCircularDependency
+    ): array
     {
         $routePath = substr($sourcePath, strlen($sourceDir));
         foreach ($this->documentExtensions as $ext) {
@@ -189,12 +205,16 @@ final class RouteCollector
         $parameterHandlerPath = $sourceDir
             . implode('/', array_slice($segments, 0, $i + 1))
             . '/#param.php';
-        $parameterResults = $this->getParameterResultsFromHandler($parameterHandlerPath, $previous);
+        $parameterResults = $this->getParameterResultsFromHandler(
+            $parameterHandlerPath, $previous, $ignoreCircularDependency
+        );
 
         $output = [];
         foreach ($parameterResults as $parameterResult) {
             $previous[$name] = $parameterResult;
-            $routes = $this->createParameterRoutes($sourceDir, $sourcePath, $parameters, $previous);
+            $routes = $this->createParameterRoutes(
+                $sourceDir, $sourcePath, $parameters, $previous, $ignoreCircularDependency
+            );
             $output = array_merge($output, $routes);
         }
         return $output;
@@ -205,10 +225,13 @@ final class RouteCollector
      *
      * @param string                $handlerPath
      * @param array<string, string> $previous
+     * @param bool                  $ignoreCircularDependency
      *
      * @return list<string>
      */
-    private function getParameterResultsFromHandler(string $handlerPath, array $previous): array
+    private function getParameterResultsFromHandler(
+        string $handlerPath, array $previous, bool $ignoreCircularDependency
+    ): array
     {
         if (!file_exists($handlerPath)) {
             throw new UnexpectedValueException(sprintf(
@@ -221,6 +244,14 @@ final class RouteCollector
         if (array_key_exists($hash, $this->parameterResults)) {
             return $this->parameterResults[$hash];
         }
+
+        if (in_array($hash, self::$inHandledParameterHandlers)) {
+            return $ignoreCircularDependency ? [] : throw new LogicException(sprintf(
+                'Circular dependency detected in parameter handler "%s".',
+                $handlerPath,
+            ));
+        }
+        self::$inHandledParameterHandlers[] = $hash;
 
         $func = include $handlerPath;
         $errorMessage = sprintf(

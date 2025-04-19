@@ -6,10 +6,10 @@ namespace Headercat\Statimate\Config;
 
 use Closure;
 use Headercat\Statimate\Compiler\CompileTarget;
-use Headercat\Statimate\Compiler\Preset\BladeCompiler;
-use Headercat\Statimate\Compiler\Preset\MarkdownCompiler;
-use Headercat\Statimate\Helper\Pagination;
 use Headercat\Statimate\Plugin\PluginInterface;
+use Headercat\Statimate\Plugin\Preset\BladePlugin\BladePlugin;
+use Headercat\Statimate\Plugin\Preset\MarkdownPlugin\MarkdownPlugin;
+use Headercat\Statimate\Plugin\Preset\PaginationPlugin\PaginationPlugin;
 use InvalidArgumentException;
 use ReflectionFunction;
 use RuntimeException;
@@ -44,27 +44,34 @@ final class StatimateConfig
     private(set) array $registeredPlugins = [];
 
     /**
+     * @var list<class-string<PluginInterface>> Default plugins to register.
+     */
+    private const array DEFAULT_PLUGINS = [
+        BladePlugin::class,
+        MarkdownPlugin::class,
+        PaginationPlugin::class,
+    ];
+
+    /**
      * Constructor.
      *
      * @param bool $withDefaultValues Initialize the configuration with default values.
      */
     public function __construct(bool $withDefaultValues = true)
     {
-        Pagination::init($this);
-
         if (!$withDefaultValues) {
             return;
         }
-
-        $this->setProjectDir($this->getAutoDetectedProjectDir());
-        $this->setBuildDir($this->projectDir . '/build');
         try {
+            $this->setProjectDir($this->getAutoDetectedProjectDir());
             $this->setRouteDir($this->projectDir . '/routes');
+            $this->setBuildDir($this->projectDir . '/build');
+
+            foreach (self::DEFAULT_PLUGINS as $pluginClass) {
+                $this->addPlugin($pluginClass);
+            }
         } catch (Throwable) {
         }
-
-        $this->addDocumentCompiler('.blade.php', BladeCompiler::compileDocument(...));
-        $this->addDocumentCompiler('.md', MarkdownCompiler::compileDocument(...));
     }
 
     /**

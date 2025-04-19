@@ -18,7 +18,9 @@ final class RouteCollector
     /**
      * @var list<string> Extension names with a leading dot, which should be treated as document routes.
      */
-    private array $documentExtensions;
+    protected array $documentExtensions {
+        get => array_keys($this->config->documentCompilers);
+    }
 
     /**
      * @var array<string, list<string>> Map of a parameter handler file path and it's result parameter strings.
@@ -35,9 +37,8 @@ final class RouteCollector
      *
      * @param StatimateConfig $config Statimate configuration.
      */
-    public function __construct(StatimateConfig $config)
+    public function __construct(private readonly StatimateConfig $config)
     {
-        $this->documentExtensions = array_keys($config->documentCompilers);
     }
 
     /**

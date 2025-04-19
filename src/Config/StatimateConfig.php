@@ -8,6 +8,7 @@ use Closure;
 use Headercat\Statimate\Compiler\CompileTarget;
 use Headercat\Statimate\Compiler\Preset\BladeCompiler;
 use Headercat\Statimate\Compiler\Preset\MarkdownCompiler;
+use Headercat\Statimate\Helper\Pagination;
 use InvalidArgumentException;
 use ReflectionFunction;
 use RuntimeException;
@@ -43,6 +44,8 @@ final class StatimateConfig
      */
     public function __construct(bool $withDefaultValues = true)
     {
+        Pagination::init($this);
+
         if (!$withDefaultValues) {
             return;
         }

@@ -26,12 +26,14 @@ use Workerman\Protocols\Http\ServerSentEvents;
 
 final class Application extends \Silly\Application
 {
+    private const string VERSION = '0.0.2';
+
     /**
      * Constructor.
      */
     public function __construct()
     {
-        parent::__construct('☀ statimate.', $this->getVersionFromComposer());
+        parent::__construct('☀ statimate.', self::VERSION);
         $this->useContainer(Container::getInstance());
 
         $this->command('init', $this->initCommand(...))
@@ -360,25 +362,6 @@ HTML)) {
         Output::write('');
 
         Worker::runAll();
-    }
-
-    /**
-     * Get a version string from composer.json.
-     *
-     * @return string
-     */
-    private function getVersionFromComposer(): string
-    {
-        if (file_exists($composerJsonPath = __DIR__ . '/../../composer.json')) {
-            $composerData = json_decode(file_get_contents($composerJsonPath) ?: '{}');
-            assert(is_object($composerData));
-            if (property_exists($composerData, 'version')) {
-                $version = $composerData->version;
-                assert(is_string($version));
-                return $version;
-            }
-        }
-        return '0.0.1';
     }
 
     /**

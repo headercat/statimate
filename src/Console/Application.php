@@ -34,6 +34,8 @@ final class Application extends \Silly\Application
         parent::__construct('☀ statimate.', $this->getVersionFromComposer());
         $this->useContainer(Container::getInstance());
 
+        $this->command('init', $this->initCommand(...))
+            ->descriptions('Initialize a statimate project.');
         $this->command('build [config]', $this->buildCommand(...))
             ->descriptions('Build the statimate static site', [
                 'config' => 'PHP file which return a StatimateConfig instance.',
@@ -43,6 +45,102 @@ final class Application extends \Silly\Application
                 'port' => 'Port number to serve.',
                 'config' => 'PHP file which return a StatimateConfig instance.',
             ]);
+    }
+
+    /**
+     * Init command.
+     *
+     * @return void
+     *
+     * @throws BindingResolutionException
+     */
+    public function initCommand(): void
+    {
+        $globalTimer = new Timer();
+        Output::title($this->getVersion());
+
+        $currentDir = getcwd();
+        if (!$currentDir) {
+            Output::error('Cannot determine the current directory.');
+            exit(1);
+        }
+
+        $files = array_diff(scandir($currentDir), [ '.', '..' ]);
+        if (!empty($files)) {
+            Output::error('The current directory is not empty.');
+            exit(1);
+        }
+
+        $timer = new Timer();
+        Output::step(1, 'Create project files');
+
+        if (!file_put_contents($currentDir . '/composer.json', <<<JSON
+{
+  "description": "Statimate project",
+  "type": "project",
+  "require-dev": {
+    "headercat/statimate": "{$this->getVersion()}"
+  }
+}
+JSON)) {
+            Output::error('Cannot create composer.json file.', $globalTimer);
+            exit(1);
+        }
+        if (!file_put_contents($currentDir . '/statimate.config.php', <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+use Headercat\Statimate\Config\StatimateConfig;
+
+return new StatimateConfig();
+PHP)) {
+            Output::error('Cannot create statimate.config.php file.', $globalTimer);
+            exit(1);
+        }
+        if (!mkdir($currentDir . '/routes')) {
+            Output::error('Cannot create routes directory.', $globalTimer);
+            exit(1);
+        }
+        if (!file_put_contents($currentDir . '/routes/#layout.blade.php', <<<'HTML'
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Statimate</title>
+</head>
+<body>
+<main>
+    {!! $content !!}
+</main>
+</body>
+</html>
+HTML)) {
+            Output::error('Cannot create #layout.blade.php file.', $globalTimer);
+            exit(1);
+        }
+        if (!file_put_contents($currentDir . '/routes/index.blade.php', <<<'HTML'
+<h1>Hello, world!</h1>
+HTML)) {
+            Output::error('Cannot create index.blade.php file.', $globalTimer);
+            exit(1);
+        }
+        Output::success('Project files created.', $timer);
+
+        $timer = new Timer();
+        Output::step(2, 'Install dependencies');
+
+        exec('composer install', $_, $returnCode);
+        Output::write('');
+
+        if ($returnCode !== 0) {
+            Output::error('Failed to install dependencies.', $globalTimer);
+            exit(1);
+        }
+        Output::success('Dependencies installed.', $timer);
+
+        Output::step(3, 'Complete initialization');
+        Output::success('Project initialized. Run `statimate serve` to start your development.', $globalTimer);
     }
 
     /**
@@ -131,7 +229,7 @@ final class Application extends \Silly\Application
      */
     public function serveCommand(string $port = '8080', string|null $config = null): void
     {
-        $port = (int) $port;
+        $port = (int)$port;
         if (!$port || $port < 1 || $port > 65535) {
             Output::error('Port number must be an integer between 1 and 65535.');
             exit(1);
@@ -157,21 +255,21 @@ final class Application extends \Silly\Application
 
         $lastMtime = time();
         $routes = [];
-        $scoped = [ $config, $routeCollector, $writer, $compiler, $sseScript, &$lastMtime, &$routes ];
+        $scoped = [$config, $routeCollector, $writer, $compiler, $sseScript, &$lastMtime, &$routes];
 
         /** @noinspection PhpObjectFieldsAreOnlyWrittenInspection */
         $worker = new Worker('http://0.0.0.0:' . $port);
         $worker->onMessage = function (TcpConnection $connection, Request $request) use ($scoped): bool|null {
-            [ $config, $routeCollector, $writer, $compiler, $sseScript, &$lastMtime, &$routes ] = $scoped;
+            [$config, $routeCollector, $writer, $compiler, $sseScript, &$lastMtime, &$routes] = $scoped;
 
             if ($request->path() === '/__statimate_broadcast') {
                 if ($request->header('accept') !== 'text/event-stream') {
                     return $connection->send(new Response(302, [
-                        'Location' => 'https://github.com/headercat/statimate'
+                        'Location' => 'https://github.com/headercat/statimate',
                     ]));
                 }
                 $connection->send(new Response(200, [
-                    'Content-Type' => 'text/event-stream'
+                    'Content-Type' => 'text/event-stream',
                 ])->withBody("\r\n"));
 
                 $interval = \Workerman\Timer::add(0.5, function () use ($config, $connection, &$lastMtime, &$interval) {

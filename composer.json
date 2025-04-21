@@ -30,8 +30,7 @@
         "league/commonmark": "^2.6",
         "symfony/console": "^7.2",
         "mnapoli/silly": "^1.9",
-        "workerman/workerman": "^5.1",
-        "ext-pthreads": "*"
+        "workerman/workerman": "^5.1"
     },
     "require-dev": {
         "phpstan/phpstan": "^2.1"

@@ -1,7 +1,6 @@
 {
     "name": "headercat/statimate",
     "description": "Static site generator for minimalist.",
-    "version": "0.0.1",
     "license": "MIT",
     "authors": [
         {

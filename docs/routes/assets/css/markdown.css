@@ -1,0 +1,142 @@
+h1, h2, h3, h4 {
+  margin: 0;
+  padding: 0;
+  letter-spacing: -0.1rem;
+}
+
+h1 {
+  margin: 4rem 0;
+
+  color: #111;
+  font-size: 3.2rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+h2 {
+  margin: 3.2rem 0;
+
+  color: #333;
+  font-size: 2.4rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+h3 {
+  margin: 2.4rem 0;
+
+  color: #333;
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+h4 {
+  margin: 2rem 0;
+
+  color: #333;
+  font-size: 1.6rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+p {
+  color: #111;
+  font-size: 1.45rem;
+  line-height: 2;
+}
+
+b, strong {
+  font-weight: 600;
+}
+
+i, em {
+  font-style: italic;
+}
+
+u {
+  text-decoration: underline;
+  text-decoration-color: inherit;
+  text-underline-offset: 0.2rem;
+}
+
+s, strike {
+  color: #777;
+}
+
+a {
+  color: #0047AE;
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+blockquote {
+  display: block;
+  margin: 0;
+  padding-left: 1.6rem;
+
+  border-left: 0.4rem solid #EEE;
+  background-color: transparent;
+}
+
+blockquote, blockquote * {
+  color: #555;
+  font-style: italic;
+  line-height: 1.75;
+}
+
+hr {
+  width: 100%;
+  height: 0.1rem;
+  margin: 3.2rem 0;
+
+  border: 0 none;
+  background-color: #EEE;
+}
+
+ul, ol {
+  margin: 0;
+  padding: 0.4rem 0 0.8rem 3.2rem;
+
+  color: #333;
+  font-size: 1.5rem;
+  line-height: 2;
+}
+
+ul li, ol li {
+  padding-left: 0.4rem;
+}
+
+code {
+  display: inline;
+  padding: 0.2rem 0.4rem;
+
+  background-color: #EEE;
+
+  font-size: 1.3rem;
+}
+
+pre {
+  display: block;
+  margin: 0;
+  padding: 0;
+
+  background-color: transparent;
+}
+
+pre code {
+  display: block;
+  width: 100%;
+  padding: 1.2rem 1.6rem !important;
+
+  line-height: 1.5 !important;
+}
+
+code, code *, pre, pre *, .hljs {
+  font-family: 'Space Grotesk', monospace !important;
+  letter-spacing: 0 !important;
+}

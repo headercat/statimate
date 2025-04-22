@@ -20,7 +20,7 @@ Statimate provides the following key features to make building static sites simp
 
 ## Official Documentation
 
-Documentation or statimate can be found at [the website](https://headercat.github.io/statimate).
+Documentation or statimate can be found at [the website](https://statimate.provider.sh/).
 
 ## License
 

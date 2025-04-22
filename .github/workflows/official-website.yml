@@ -29,7 +29,7 @@ jobs:
       - name: Install Dependencies
         run: composer install
       - name: Build Statimate Project
-        run: cd docs && ../vendor/bin/statimate build
+        run: cd docs && ../bin/statimate build
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:

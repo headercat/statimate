@@ -1,4 +1,4 @@
-<img src="./arts/banner.png" alt="statimate" />
+<img src="docs/routes/assets/images/banner.png" alt="statimate" />
 <p align="center">
 <a href="https://packagist.org/packages/headercat/statimate"><img src="https://poser.pugx.org/headercat/statimate/v/stable" alt="Latest Stable Version" /></a>
 <a href="https://packagist.org/packages/headercat/statimate"><img src="https://poser.pugx.org/headercat/statimate/downloads" alt="Total Downloads" /></a>
@@ -20,7 +20,7 @@ Statimate provides the following key features to make building static sites simp
 
 ## Official Documentation
 
-Documentation or statimate can be found at [the website](https://headercat.github.io/statimate).
+Documentation or statimate can be found at [the website](https://statimate.provider.sh/).
 
 ## License
 

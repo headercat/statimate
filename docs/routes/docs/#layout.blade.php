@@ -3,6 +3,7 @@
         <nav class="docs__aside-nav">
             <b>Getting Started</b>
             <a href="/docs/">Introduction</a>
+            <a href="/docs/creating-a-project">Creating a Project</a>
         </nav>
     </aside>
     <div class="docs__main">

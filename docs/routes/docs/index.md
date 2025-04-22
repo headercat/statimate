@@ -46,7 +46,6 @@ Statimate is distributed via packagist. You will need to download composer to us
 * **Composer**: [https://getcomposer.org/download/](https://getcomposer.org/download/)
 
 Once you have both PHP 8.4 and composer ready, you can install statimate by running the command below.
-
 ```bash
 composer global require headercat/statimate
 ```

@@ -7,6 +7,8 @@ namespace Headercat\Statimate\Router;
 use Closure;
 use FilesystemIterator;
 use Headercat\Statimate\Config\StatimateConfig;
+use Headercat\Statimate\Router\Hooks\AfterCollectRouteHook;
+use Headercat\Statimate\Router\Hooks\BeforeCollectRouteHook;
 use LogicException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -51,6 +53,7 @@ final class RouteCollector
      */
     public function collect(string $sourceDir, bool $ignoreCircularDependency = false): array
     {
+        $sourceDir = BeforeCollectRouteHook::dispatch($sourceDir);
         $realSourceDir = realpath($sourceDir);
         if (!$realSourceDir) {
             throw new UnexpectedValueException(sprintf(
@@ -62,6 +65,7 @@ final class RouteCollector
         foreach ($this->scanDirectory($realSourceDir) as $file) {
             $routes = array_merge($routes, $this->createRoutes($realSourceDir, $file, $ignoreCircularDependency));
         }
+        $routes = AfterCollectRouteHook::dispatch($routes);
 
         $registeredRoutePaths = [];
         foreach ($routes as $route) {

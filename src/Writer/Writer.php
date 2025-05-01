@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Headercat\Statimate\Writer;
 
 use Headercat\Statimate\Config\StatimateConfig;
+use Headercat\Statimate\Writer\Hooks\BeforeCopyHook;
+use Headercat\Statimate\Writer\Hooks\BeforeWriteHook;
 use RuntimeException;
 
 final readonly class Writer
@@ -56,6 +58,8 @@ final readonly class Writer
     public function write(string $dest, string $content): void
     {
         $dest = $this->config->buildDir . $dest;
+        ['dest' => $dest, 'content' => $content] = BeforeWriteHook::dispatch(['dest' => $dest, 'content' => $content]);
+
         $this->createDirectory($dest);
         if (file_put_contents($dest, $content) === false) {
             throw new RuntimeException('Unable to write file "' . $dest . '".');
@@ -73,6 +77,8 @@ final readonly class Writer
     public function copy(string $dest, string $from): void
     {
         $dest = $this->config->buildDir . $dest;
+        ['dest' => $dest, 'from' => $from] = BeforeCopyHook::dispatch(['dest' => $dest, 'from' => $from]);
+
         $this->createDirectory($dest);
         if (!copy($from, $dest)) {
             throw new RuntimeException('Unable to copy file "' . $dest . '".');

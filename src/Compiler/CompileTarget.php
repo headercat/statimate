@@ -7,9 +7,9 @@ namespace Headercat\Statimate\Compiler;
 use Headercat\Statimate\Config\StatimateConfig;
 use UnexpectedValueException;
 
-final readonly class CompileTarget
+final class CompileTarget
 {
-    private(set) string $content;
+    public string $content;
 
     /**
      * Constructor.
@@ -19,9 +19,9 @@ final readonly class CompileTarget
      * @param StatimateConfig      $config Statimate configuration.
      */
     public function __construct(
-        private(set) string $path,
-        private(set) array $vars,
-        private(set) StatimateConfig $config,
+        public string          $path,
+        public array           $vars,
+        public StatimateConfig $config,
     )
     {
         try {

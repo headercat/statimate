@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Headercat\Statimate\Compiler;
 
+use Headercat\Statimate\Compiler\Hooks\AfterCompileHook;
+use Headercat\Statimate\Compiler\Hooks\BeforeCompileHook;
 use Headercat\Statimate\Config\StatimateConfig;
 use Headercat\Statimate\Router\Route;
 use RuntimeException;
@@ -39,6 +41,7 @@ final readonly class Compiler
         $content = '';
         foreach ($this->getCompileTargetPaths($route) as $path) {
             $content = $this->getCompiledContent($path, [
+                'route' => $route,
                 'params' => $route->parameters,
                 'content' => $content,
             ]);
@@ -87,6 +90,7 @@ final readonly class Compiler
             if (!str_ends_with($path, $ext)) {
                 continue;
             }
+            $compileTarget = BeforeCompileHook::dispatch($compileTarget);
             $output = $handler($compileTarget);
             if (!is_string($output)) {
                 throw new RuntimeException(sprintf(
@@ -95,8 +99,8 @@ final readonly class Compiler
                     get_debug_type($output),
                 ));
             }
-            return $output;
+            return AfterCompileHook::dispatch($output);
         }
-        return $compileTarget->content;
+        return AfterCompileHook::dispatch($compileTarget->content);
     }
 }

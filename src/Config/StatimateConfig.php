@@ -8,6 +8,7 @@ use Closure;
 use Headercat\Statimate\Compiler\CompileTarget;
 use Headercat\Statimate\Plugin\PluginInterface;
 use Headercat\Statimate\Plugin\Preset\BladePlugin\BladePlugin;
+use Headercat\Statimate\Plugin\Preset\FrontMatterPlugin\FrontMatterPlugin;
 use Headercat\Statimate\Plugin\Preset\MarkdownPlugin\MarkdownPlugin;
 use Headercat\Statimate\Plugin\Preset\PaginationPlugin\PaginationPlugin;
 use InvalidArgumentException;
@@ -50,6 +51,7 @@ final class StatimateConfig
         BladePlugin::class,
         MarkdownPlugin::class,
         PaginationPlugin::class,
+        FrontMatterPlugin::class,
     ];
 
     /**

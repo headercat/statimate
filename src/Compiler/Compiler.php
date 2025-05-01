@@ -41,6 +41,7 @@ final readonly class Compiler
         $content = '';
         foreach ($this->getCompileTargetPaths($route) as $path) {
             $content = $this->getCompiledContent($path, [
+                'route' => $route,
                 'params' => $route->parameters,
                 'content' => $content,
             ]);

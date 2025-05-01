@@ -26,7 +26,7 @@ use Workerman\Protocols\Http\ServerSentEvents;
 
 final class Application extends \Silly\Application
 {
-    private const string VERSION = '0.0.2';
+    private const string VERSION = '0.0.3';
 
     /**
      * Constructor.

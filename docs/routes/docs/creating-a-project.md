@@ -1,3 +1,6 @@
+---
+title: Docs > Creating a Project
+---
 # Creating a Project
 
 If you haven't already installed statimate, run `composer global require headercat/statimate` to install.

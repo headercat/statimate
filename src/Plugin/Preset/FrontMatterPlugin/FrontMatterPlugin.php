@@ -10,6 +10,7 @@ use Headercat\Statimate\Compiler\Hooks\BeforeCompileHook;
 use Headercat\Statimate\Config\StatimateConfig;
 use Headercat\Statimate\Plugin\PluginInterface;
 use Headercat\Statimate\Router\Hooks\AfterCollectRouteHook;
+use Symfony\Component\Yaml\Yaml;
 
 final class FrontMatterPlugin implements PluginInterface
 {
@@ -22,8 +23,10 @@ final class FrontMatterPlugin implements PluginInterface
                 if (!$content) {
                     continue;
                 }
-                $content = preg_replace(self::FRONT_MATTER_REGEX, '', $content, 1);
-                $route->extras['content'] = $content;
+                $content = preg_match(self::FRONT_MATTER_REGEX, $content, $matches) ? $matches[1] : '';
+                if (is_array($output = Yaml::parse($content))) {
+                    $route->extras = $output; // @phpstan-ignore-line
+                }
             }
             return $routes;
         });

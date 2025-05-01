@@ -1,3 +1,6 @@
+---
+title: Docs > Introduction
+---
 # Introduction
 
 Statimate is a static site generator for minimalist. It aims to generate static sites with a modest level of tools 
